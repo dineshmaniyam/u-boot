@@ -144,6 +144,10 @@
 
 #include <config_distro_bootcmd.h>
 
+#ifndef SOCFPGA_BOARD_ENV_APPEND
+#define SOCFPGA_BOARD_ENV_APPEND ""
+#endif
+
 #ifndef CFG_EXTRA_ENV_SETTINGS
 #define CFG_EXTRA_ENV_SETTINGS \
 	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
@@ -154,6 +158,7 @@
 	"pxefile_addr_r=0x02200000\0" \
 	"ramdisk_addr_r=0x02300000\0" \
 	"socfpga_legacy_reset_compat=1\0" \
+	SOCFPGA_BOARD_ENV_APPEND \
 	BOOTENV
 
 #endif
