@@ -20,18 +20,65 @@ Required properties:
 		   FPGA core bitstream contains FPGA design which is used to
 		   program FPGA CRAM and ERAM.
 
-Example: Bundles both peripheral bitstream and core bitstream into FIT image
-	 called fit_spl_fpga.itb. This FIT image can be created through running
-	 this command: tools/mkimage
-		       -E -p 400
-		       -f board/altera/arria10-socdk/fit_spl_fpga.its
-		       fit_spl_fpga.itb
+FIT image source files
+======================
 
-	 For details of describing structure and contents of the FIT image,
-	 please refer board/altera/arria10-socdk/fit_spl_fpga.its
+Two .its sources are provided under board/altera/arria10-socdk/:
 
-- Examples for booting with full release or booting with early IO release, then
-  follow by entering early user mode:
+  fit_spl_fpga.its
+	Bundles both peripheral and core bitstreams. SPL programs both
+	stages from the resulting fit_spl_fpga.itb (single-stage flow).
+
+  fit_spl_fpga_periph_only.its
+	Same images but the default configuration only references the
+	peripheral bitstream. SPL programs the peripheral bitstream from
+	the resulting fit_spl_fpga.itb (built from this source) so DDR
+	comes up; programming of the core bitstream is deferred to
+	U-Boot proper. This avoids the FAT alignment penalty when SPL
+	loads a large fit image from SD/MMC and reduces SPL boot time
+	noticeably for SDMMC boot.
+
+Building the FIT image
+======================
+
+Build whichever .its source matches the desired flow with mkimage:
+
+	tools/mkimage -E -p 400 \
+		-f board/altera/arria10-socdk/fit_spl_fpga.its \
+		fit_spl_fpga.itb
+
+or, for the two-stage (peripheral-only-in-SPL) flow:
+
+	tools/mkimage -E -p 400 \
+		-f board/altera/arria10-socdk/fit_spl_fpga_periph_only.its \
+		fit_spl_fpga.itb
+
+In both cases the file referenced by the device-tree property
+altr,bitstream (typically "fit_spl_fpga.itb") must be present on the
+boot medium. SPL reads this file via the FAT loader on SD/MMC.
+
+For the two-stage flow, the same file name (fit_spl_fpga.itb) is also
+read again from U-Boot proper to extract the fpga-core-1 sub-image and
+program the FPGA CRAM/ERAM via "fpga loadmk". The Arria 10 SoCDK board
+header provides ready-to-use environment variables for this:
+
+	prog_core         - load fit_spl_fpga.itb from MMC FAT and program
+			    fpga-core-1 via "fpga loadmk".
+	bootcmd_fpga_mmc  - convenience wrapper that runs an optional FAT
+			    boot script, programs the core bitstream, enables
+			    the HPS-to-FPGA bridges and finally invokes
+			    distro_bootcmd.
+
+Users opt in to the two-stage flow at runtime, e.g.
+
+	setenv bootcmd "run bootcmd_fpga_mmc"
+	saveenv
+
+For details of describing the structure and contents of the FIT image,
+please refer to the .its source files listed above.
+
+Examples for booting with full release or booting with early IO release,
+then follow by entering early user mode:
 
 	fpga_mgr: fpga-mgr@ffd03000 {
 		compatible = "altr,socfpga-a10-fpga-mgr";

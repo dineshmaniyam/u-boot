@@ -32,6 +32,33 @@
 
 /* SPL memory allocation configuration, this is for FAT implementation */
 
+/*
+ * SD/MMC boot uses CFG_EXTRA_ENV_SETTINGS from socfpga_common.h; append
+ * Arria 10 SoCDK-only variables here so other SoCFPGA boards are
+ * unaffected.
+ *
+ * Default CONFIG_BOOTCOMMAND stays "run distro_bootcmd" (no MMC/FAT/FIT
+ * assumptions at autoboot). For two-stage FPGA programming (load script,
+ * program core bitstream from U-Boot proper, enable HPS-to-FPGA bridges,
+ * then distro), run: bootcmd_fpga_mmc, e.g.:
+ *
+ *   setenv bootcmd "run bootcmd_fpga_mmc"; saveenv
+ *
+ * or invoke that from u-boot.scr.
+ */
+#if !defined(CONFIG_QSPI_BOOT) && !defined(CONFIG_NAND_BOOT)
+#define SOCFPGA_BOARD_ENV_APPEND						\
+	"fatscript=if fatload mmc 0:1 ${scriptaddr} ${scriptfile};"		\
+		"then source ${scriptaddr}:script; fi\0"			\
+	"prog_core=if load mmc 0:1 ${loadaddr} fit_spl_fpga.itb; then "		\
+		"if fpga loadmk 0 ${loadaddr}:fpga-core-1; then "		\
+			"echo prog_core: ok; "					\
+		"else echo prog_core: fpga_loadmk_failed; fi; "			\
+		"else echo prog_core: fit_load_failed; fi\0"			\
+	"bootcmd_fpga_mmc=run fatscript; run prog_core; bridge enable; "	\
+		"run distro_bootcmd\0"
+#endif
+
 /* The rest of the configuration is shared */
 #include <configs/socfpga_common.h>
 
