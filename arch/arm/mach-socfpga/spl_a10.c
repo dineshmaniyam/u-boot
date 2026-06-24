@@ -258,7 +258,7 @@ void board_init_f(ulong dummy)
 	socfpga_sdram_remap_zero();
 	socfpga_pl310_clear();
 
-	/* Assert reset to all except L4WD0 and L4TIMER0 */
+	/* Assert reset to all except L4WD0, L4WD1 and L4TIMER0 */
 	socfpga_per_reset_all();
 	socfpga_watchdog_disable();
 
@@ -266,8 +266,8 @@ void board_init_f(ulong dummy)
 	cm_basic_init(gd->fdt_blob);
 
 #ifdef CONFIG_HW_WATCHDOG
-	/* release osc1 watchdog timer 0 from reset */
-	socfpga_reset_deassert_osc1wd0();
+	/* release watchdog 1 from reset */
+	socfpga_reset_deassert_wd1();
 
 	/* reconfigure and enable the watchdog */
 	hw_watchdog_init();
